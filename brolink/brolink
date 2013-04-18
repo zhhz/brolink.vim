@@ -1,0 +1,5 @@
+#!/bin/bash
+
+USER_HOME=$(eval echo ~${SUDO_USER})
+DIR="$USER_HOME/.vim/bundle/brolink.vim/brolink/"
+$DIR/node_runner.sh 50 2 1 $DIR/brolink.js

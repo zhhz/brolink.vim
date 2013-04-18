@@ -1,8 +1,10 @@
 #! /bin/bash
 
+# shamelessly c&p from node-ninja-runner
 #
 # !!! IMPORTANT !!!!
 #    MAKE SURE THESE ARE CORRECT FOR YOUR SYSTEM
+#
 PGREP=/usr/bin/pgrep
 AWK=/usr/bin/awk
 NODE=/usr/local/bin/node
@@ -11,9 +13,7 @@ PS_FLAGS=wux
 AWK_PROG='{print $6}'  # on OS X and ubuntu res mem size is $6 in "ps wux"
 PAUSE_TIME=4
 
-MAX_MEM=100 # max memory in MB
-N_CRASHES=2 # number of crashes allowed per N_MIN
-N_MIN=1
+
 
 txtund=$(tput sgr 0 1)          # Underline
 txtbld=$(tput bold)             # Bold
@@ -25,7 +25,16 @@ INFO=${bldgrn}INFO:${txtrst}
 ERROR=${bldred}ERROR:${txtrst}
 WARN=${bldylw}WARNING:${txtrst}
 
-SERVER_JS="~/vim/bundle/brolink.vim/brolink/brolink.js"
+app_name=`basename $0`
+
+
+function usage ()
+{
+    echo "usage: $app_name max_memory n_crashes n_minutes script.js [...]"
+    echo "         - max_memory in MB"
+    echo "         - permit no more than 'n_crashes' per 'n_minutes'"
+    exit 1;
+}
 
 function check_progs
 {
@@ -37,35 +46,41 @@ function check_progs
 
 function already_running
 {
-    echo "'node brolink.js' already be running. Cowardly refusing to start another."
+    echo "'node $1' already be running. Cowardly refusing to start another."
     exit 1
 }
 
+
 check_progs
+
+if [ $# -lt 4 ];
+then
+    usage
+fi
 
 # bash only does integer arithmetic, so we'll mult by 100
 # to avoid decimals
 RESTART_WEIGHT=0
-MAX_WEIGHT=$(( $N_MIN * 6000 ))
-WEIGHT_TIME_CHUNK=$(( (6000 * $N_MIN) / $N_CRASHES ))
-FADE_TIME_CHUNK=$(( ($MAX_WEIGHT / $N_CRASHES) / (600 / ($PAUSE_TIME * 10)) ))
+MAX_WEIGHT=$(( $3 * 6000 ))
+WEIGHT_TIME_CHUNK=$(( (6000 * $3) / $2 ))
+FADE_TIME_CHUNK=$(( ($MAX_WEIGHT / $2) / (600 / ($PAUSE_TIME * 10)) ))
 #echo $WEIGHT_TIME_CHUNK $MAX_WEIGHT $FADE_TIME_CHUNK
 
 # first make sure it's not running.
-PID=`$PGREP -n -f "$NODE $SERVER_JS"`
+PID=`$PGREP -n -f "$NODE $4"`
 if [ "$PID" != "" ]; then
-    already_running $SEVER_JS
+    already_running $4
 fi
 
 # now launch it and start monitoring
-echo "$INFO Launching brolink node server ..."
-$NODE $SERVER_JS &
+echo "$INFO Launching node server $4..."
+$NODE $4 &
 
 while true
 do
     sleep $PAUSE_TIME
 
-    PID=`$PGREP -n -f "$NODE $SERVER_JS"`
+    PID=`$PGREP -n -f "$NODE $4"`
     NEED_RESTART=no
     if [ "$PID" == "" ]; then
         echo
@@ -75,9 +90,9 @@ do
         # check memory usage
         MEM_USAGE=`$PS $PS_FLAGS $PID | $AWK 'NR>1' | $AWK "$AWK_PROG"`
         MEM_USAGE=$(( $MEM_USAGE / 1024 ))
-        if [ $MEM_USAGE -gt $MAX_MEM ];
+        if [ $MEM_USAGE -gt $1 ];
         then
-            echo "$ERROR node has exceed permitted memory of $MAX_MEM mb, restarting."
+            echo "$ERROR node has exceed permitted memory of $1 mb, restarting."
             kill $PID
             NEED_RESTART=yes
         fi
@@ -92,7 +107,7 @@ do
         if [ "$RESTART_WEIGHT" -le "$MAX_WEIGHT" ];
         then
             echo "$INFO Restarting..."
-            $NODE $SERVER_JS&
+            $NODE $4 $5 $6 $7 $8 $9 $10 $11 $12 $13 $14 &
             RESTART_WEIGHT=$(( $RESTART_WEIGHT + $WEIGHT_TIME_CHUNK ))
         else
             echo "$ERROR Too many restarts. Aborting."

@@ -25,7 +25,7 @@ INFO=${bldgrn}INFO:${txtrst}
 ERROR=${bldred}ERROR:${txtrst}
 WARN=${bldylw}WARNING:${txtrst}
 
-SERVER_JS="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )/brolink.js"
+SERVER_JS="~/vim/bundle/brolink.vim/brolink/brolink.js"
 
 function check_progs
 {

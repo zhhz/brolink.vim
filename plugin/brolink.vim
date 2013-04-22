@@ -69,6 +69,6 @@ if !exists("g:bl_no_mappings")
 endif
 
 if !exists("g:bl_no_autoupdate")
-  au BufWritePost *.html,*.js,*.php :BLReloadPage
+  au BufWritePost *.html,*.js,*.erb :BLReloadPage
   au BufWritePost *.css :BLReloadCSS
 endif
